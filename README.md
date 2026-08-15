@@ -5,6 +5,7 @@
 > 🌐 **语言切换 / Language Toggle:** [中文](#chinese) | [English](#english)
 
 ---
+<img width="1720" height="1366" alt="图片" src="https://github.com/user-attachments/assets/ea85720f-da25-4b38-aa6e-1cadf6ad72dc" />
 
 <a id="chinese"></a>
 
