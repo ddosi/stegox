@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="StegoX,深层隐写术,纯本地浏览器深层隐写与加密工具。支持将文本或大文件(最高5GB)使用 AES-256-GCM 与 SHA-512 算法加密并隐藏至任意载体文件中，全浏览器兼容，处理极速且数据绝不上传。StegoX, deep steganography tool, pure local browser encryption.">
+<title>StegoX 深层隐写术-🔰雨苁ℒ🔰</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#323232;color:#e0e0e0;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+
+/* 右上角语言切换 */
+.lang-switch{position:fixed;top:20px;right:20px;background:#2a2a2a;padding:8px 15px;border:1px solid #444;border-radius:4px;cursor:pointer;z-index:1000;font-family:'Courier New',monospace;font-size:14px;color:#00ffc8;transition:.2s}
+.lang-switch:hover{background:#00ffc8;color:#121212}
+
+.flow-chart{width:100%;max-width:1200px;background:#2a2a2a;padding:15px;border-radius:8px;border:1px solid #444;margin-bottom:20px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
+.flow-chart-title{width:100%;text-align:center;color:#00fbff;font-size:18px;margin-bottom:5px}
+.flow-node{padding:6px 12px;border-radius:4px;border:1px solid;font-size:12px;font-weight:bold;text-align:center}
+.flow-arrow{color:#666;font-size:16px}
+.enc-flow .flow-node{border-color:#00ffc8;color:#00ffc8}
+.dec-flow .flow-node{border-color:#ff9800;color:#ff9800}
+.flow-divider{width:100%;height:1px;background:#444;margin:5px 0}
+
+.main-wrapper{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;width:100%;max-width:1200px}
+.container{background:#2a2a2a;padding:20px;border-radius:8px;border:1px solid #444;flex:1 1 500px;min-width:400px;max-width:580px;display:flex;flex-direction:column}
+h1{text-align:center;font-size:18px;margin-bottom:15px;border-bottom:1px solid #444;padding-bottom:8px}
+h2{font-size:14px;margin-bottom:8px;margin-top:12px;color:#ccc}
+.enc-container{border-color:#00ffc8;box-shadow:0 0 15px rgba(0,255,200,.1)}
+.enc-container h1{color:#00ffc8}
+.enc-container .btn{border-color:#00ffc8;color:#00ffc8}
+.enc-container .btn:hover{background:#00ffc8;color:#121212}
+.enc-container .drop-zone:hover{border-color:#00ffc8;background:rgba(0,255,200,.05)}
+.enc-container .drop-zone.dragover{border-color:#00ffc8;background:rgba(0,255,200,.1)}
+.enc-container .drop-zone.active{border-color:#00ffc8;background:rgba(0,255,200,.1);color:#e0e0e0}
+
+.dec-container{border-color:#ff9800;box-shadow:0 0 15px rgba(255,152,0,.1)}
+.dec-container h1{color:#ff9800}
+.dec-container .btn{border-color:#ff9800;color:#ff9800}
+.dec-container .btn:hover{background:#ff9800;color:#121212}
+.dec-container .drop-zone:hover{border-color:#ff9800;background:rgba(255,152,0,.05)}
+.dec-container .drop-zone.dragover{border-color:#ff9800;background:rgba(255,152,0,.1)}
+.dec-container .drop-zone.active{border-color:#ff9800;background:rgba(255,152,0,.1);color:#e0e0e0}
+
+input[type="text"], input[type="password"], textarea{width:100%;background:#3a3a3a;border:1px solid #555;color:#e0e0e0;padding:8px;margin-bottom:8px;border-radius:4px;font-family:inherit;font-size:14px}
+input:focus, textarea:focus{outline:none;border-color:#777}
+input[type="file"]{display:none}
+.btn{display:inline-block;padding:10px 20px;background:transparent;border:1px solid currentColor;cursor:pointer;border-radius:4px;text-align:center;transition:.2s;width:100%;font-size:15px;font-weight:bold;margin-bottom:10px}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-clear{border-color:#666;color:#666;font-size:13px;padding:8px 12px}
+.btn-clear:hover{background:#666;color:#121212}
+
+.drop-zone{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:120px;padding:30px 20px;border:2px dashed #555;text-align:center;cursor:pointer;border-radius:4px;transition:.2s;margin-bottom:10px;font-size:15px;color:#aaa;word-break:break-all}
+.drop-zone small{color:#888;font-size:12px;display:block;margin-top:8px}
+.drop-zone.active small{color:#ccc}
+
+.payload-list{margin-top:8px;max-height:120px;overflow-y:auto}
+.payload-item{background:#3a3a3a;padding:8px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;border-left:3px solid currentColor;font-size:13px}
+.payload-item span{word-break:break-all;margin-right:10px}
+.mini-btn{padding:2px 8px;background:transparent;border:1px solid #888;color:#888;cursor:pointer;border-radius:3px;font-size:11px}
+
+.progress-bar{width:100%;height:18px;background:#3a3a3a;border-radius:4px;margin-top:8px;overflow:hidden;display:none}
+.progress-bar.active{display:block}
+.progress-fill{height:100%;background:#00ffc8;width:0%;transition:width .2s;text-align:center;font-size:11px;line-height:18px;color:#121212;font-weight:bold}
+.dec-container .progress-fill{background:#ff9800}
+
+.status{margin-top:8px;padding:8px;background:#3a3a3a;border-radius:4px;font-size:13px;min-height:18px;display:none}
+.status.error{color:#ff5252;display:block;border:1px solid #ff5252}
+.status.success{color:#8fe223;display:block;border:1px solid #8fe223}
+.status.processing{color:#00ffc8;display:block;border:1px solid #00ffc8}
+.dec-container .status.success{color:#ffb74d;border-color:#ffb74d}
+.dec-container .status.processing{color:#ff9800;border-color:#ff9800}
+
+.extracted-list{margin-top:12px}
+.extracted-item{background:#3a3a3a;padding:12px;margin-bottom:8px;border-radius:4px;border:1px solid #555;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.extracted-item .info{flex:1;word-break:break-all}
+.extracted-item .info strong{color:#ff9800;font-size:14px}
+.extracted-item .info div{color:#888;font-size:12px;margin-top:4px}
+.extracted-item button{padding:6px 12px;border:1px solid #ff9800;color:#ff9800;background:transparent;border-radius:3px;cursor:pointer;font-size:12px;white-space:nowrap}
+.extracted-item button:hover{background:#ff9800;color:#121212}
+
+.foot{margin-top:20px;font-size:12px;color:#666;text-align:center;padding-bottom:20px}
+a{color:#00ffc8;text-decoration: none;}
+</style>
+</head>
+<body>
+
+<div class="lang-switch" onclick="toggleLang()">EN</div>
+
+<div class="flow-chart">
+    <div class="flow-chart-title" style="margin-bottom: 15px;" data-i18n="title">StegoX 深层隐写术 - 🔰雨苁ℒ🔰</div>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; justify-content: center;">
+        <!-- 加密说明 -->
+        <div style="flex: 1; min-width: 280px; background: rgba(0, 255, 200, 0.05); border: 1px solid rgba(0, 255, 200, 0.3); border-radius: 8px; padding: 15px; text-align: left;">
+            <div style="color: #00ffc8; font-size: 15px; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;" data-i18n="guide_enc_title">🔒 加密：把私货藏起来</div>
+            <div style="font-size: 13px; line-height: 1.8; color: #ccc;">
+                <div style="margin-bottom: 8px;" data-i18n-html="guide_enc_item1">
+                    <span style="color: #8fe223; font-weight: bold;">1. 载体文件：</span>随便找一个正常文件做外壳（如 <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">1.png</code>, <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">cmd.exe</code>）。
+                </div>
+                <div style="margin-bottom: 8px;" data-i18n-html="guide_enc_item2">
+                    <span style="color: #8fe223; font-weight: bold;">2. 密钥：</span>随便找一个能记住的文件当钥匙（如 <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">123.docx</code>），或直接输入强密码。
+                </div>
+                <div style="margin-bottom: 8px;" data-i18n-html="guide_enc_item3">
+                    <span style="color: #8fe223; font-weight: bold;">3. 隐藏内容：</span>把你准备加密塞进载体的“私货”（文本或大文件）拖进来。
+                </div>
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(0, 255, 200, 0.2); color: #aaa;" data-i18n-html="guide_enc_res">
+                    <span style="color: #00ffc8;">👉 结果：</span>点击执行隐写，会生成一个看起来和原载体一模一样的新文件，把它拿走即可！
+                </div>
+            </div>
+        </div>
+
+        <!-- 解密说明 -->
+        <div style="flex: 1; min-width: 280px; background: rgba(255, 152, 0, 0.05); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; padding: 15px; text-align: left;">
+            <div style="color: #ff9800; font-size: 15px; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;" data-i18n="guide_dec_title">🔓 解密：取出私货</div>
+            <div style="font-size: 13px; line-height: 1.8; color: #ccc;">
+                <div style="margin-bottom: 8px;" data-i18n-html="guide_dec_item1">
+                    <span style="color: #ffb74d; font-weight: bold;">1. 拖入文件：</span>把刚才生成的“新文件”拖入解密区。
+                </div>
+                <div style="margin-bottom: 8px;" data-i18n-html="guide_dec_item2">
+                    <span style="color: #ffb74d; font-weight: bold;">2. 提供密钥：</span>提供与加密时<strong style="color: #fff;">完全一致</strong>的密钥文件或密码。
+                </div>
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255, 152, 0, 0.2); color: #aaa;" data-i18n-html="guide_dec_res">
+                    <span style="color: #ff9800;">👉 结果：</span>点击提取数据，即可完美无损地取出隐藏的“私货”。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <!-- 加密模块 -->
+    <div class="container enc-container">
+        <h1 data-i18n="enc_h1">⚔ 数据隐写加密</h1>
+        
+        <h2>1. <span data-i18n="enc_h2_1">载体文件</span> <span id="encCarrierLimit" style="color:#888;font-weight:normal">(加载中...)</span></h2>
+        <div class="drop-zone" id="encCarrierZone">
+            <div data-i18n="drop_enc_carrier">点击选择或拖拽载体文件至此</div>
+            <small data-i18n="drop_enc_carrier_sub">支持任意格式 (图片/视频/文档/exe等)</small>
+        </div>
+        <input type="file" id="encCarrierFile">
+
+        <h2>2. <span data-i18n="enc_h2_2">解密密钥 (文字或文件二选一)</span></h2>
+        <input type="password" id="encPassword" placeholder="输入强密码 (建议12位以上)" data-i18n-ph="ph_enc_pwd">
+        <div class="drop-zone" id="encKeyZone" style="min-height:80px">
+            <div data-i18n="drop_key">拖拽密钥文件至此</div>
+            <small data-i18n="drop_key_sub_enc">限100MB内, 若使用文件则忽略文字</small>
+        </div>
+        <input type="file" id="encKeyFile">
+
+        <h2>3. <span data-i18n="enc_h2_3">隐藏内容 (文本与文件可混合)</span></h2>
+        <textarea id="encText" placeholder="输入要隐藏的文本 (自动打包)" style="height:60px" data-i18n-ph="ph_enc_text"></textarea>
+        <div class="drop-zone" id="encPayloadZone" style="min-height:80px;margin-top:8px">
+            <div data-i18n="drop_payload">拖拽需隐藏的文件至此</div>
+            <small data-i18n="drop_payload_sub">非Chrome浏览器总计限500MB内</small>
+        </div>
+        <input type="file" id="encPayloadFile" multiple>
+        <div class="payload-list" id="encPayloadList"></div>
+
+        <div style="margin-top:auto;padding-top:15px">
+            <button class="btn" id="encBtn" onclick="hideData()" data-i18n="btn_enc">🔒 执行隐写</button>
+            <div class="progress-bar" id="encProgress"><div class="progress-fill" id="encProgressFill">0%</div></div>
+            <div class="status" id="encStatus"></div>
+        </div>
+    </div>
+
+    <!-- 解密模块 -->
+    <div class="container dec-container">
+        <h1 data-i18n="dec_h1">🔓 数据提取解密</h1>
+        
+        <h2>1. <span data-i18n="dec_h2_1">已隐写的文件</span></h2>
+        <div class="drop-zone" id="decCarrierZone">
+            <div data-i18n="drop_dec_carrier">点击选择或拖拽待解密文件</div>
+            <small data-i18n="drop_dec_carrier_sub">自动识别内存模式或流式模式</small>
+        </div>
+        <input type="file" id="decCarrierFile">
+
+        <h2>2. <span data-i18n="dec_h2_2">解密密钥 (需与加密时完全一致)</span></h2>
+        <input type="password" id="decPassword" placeholder="输入解密密码" data-i18n-ph="ph_dec_pwd">
+        <div class="drop-zone" id="decKeyZone" style="min-height:80px">
+            <div data-i18n="drop_key">拖拽密钥文件至此</div>
+            <small data-i18n="drop_key_sub_dec">限100MB内</small>
+        </div>
+        <input type="file" id="decKeyFile">
+
+        <div style="margin-top:auto;padding-top:15px">
+            <button class="btn" id="decBtn" onclick="extractData()" data-i18n="btn_dec">🔓 读取隐藏结构</button>
+            <div class="progress-bar" id="decProgress"><div class="progress-fill" id="decProgressFill">0%</div></div>
+            <div class="status" id="decStatus"></div>
+            <button class="btn btn-clear" onclick="clearDecData()" style="margin-top:5px" data-i18n="btn_clear">🗑️ 清空解密区数据</button>
+        </div>
+        
+        <div class="extracted-list" id="extractedList"></div>
+    </div>
+</div>
+
+<div class="foot">
+    <a href="https://www.ddosi.org/">🔰雨苁🔰 www.ddosi.org</a> · <span data-i18n="foot_local">本地处理绝不上传</span> · AES-256-GCM + SHA-512
+</div>
+
+<script>
+// ========== 多语言配置 ==========
+let currentLang = 'zh';
+const i18n = {
+    zh: {
+        lang_btn: 'EN',
+        title: 'StegoX 深层隐写术 - 🔰雨苁ℒ🔰',
+        guide_enc_title: '🔒 加密：把私货藏起来',
+        guide_enc_item1: '<span style="color: #8fe223; font-weight: bold;">1. 载体文件：</span>随便找一个正常文件做外壳（如 <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">1.png</code>, <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">cmd.exe</code>）。',
+        guide_enc_item2: '<span style="color: #8fe223; font-weight: bold;">2. 密钥：</span>随便找一个能记住的文件当钥匙（如 <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">123.docx</code>），或直接输入强密码。',
+        guide_enc_item3: '<span style="color: #8fe223; font-weight: bold;">3. 隐藏内容：</span>把你准备加密塞进载体的“私货”（文本或大文件）拖进来。',
+        guide_enc_res: '<span style="color: #00ffc8;">👉 结果：</span>点击执行隐写，会生成一个看起来和原载体一模一样的新文件，把它拿走即可！',
+        guide_dec_title: '🔓 解密：取出私货',
+        guide_dec_item1: '<span style="color: #ffb74d; font-weight: bold;">1. 拖入文件：</span>把刚才生成的“新文件”拖入解密区。',
+        guide_dec_item2: '<span style="color: #ffb74d; font-weight: bold;">2. 提供密钥：</span>提供与加密时<strong style="color: #fff;">完全一致</strong>的密钥文件或密码。',
+        guide_dec_res: '<span style="color: #ff9800;">👉 结果：</span>点击提取数据，即可完美无损地取出隐藏的“私货”。',
+        enc_h1: '⚔ 数据隐写加密',
+        enc_h2_1: '载体文件',
+        enc_h2_2: '解密密钥 (文字或文件二选一)',
+        enc_h2_3: '隐藏内容 (文本与文件可混合)',
+        ph_enc_pwd: '输入强密码 (建议12位以上)',
+        ph_enc_text: '输入要隐藏的文本 (自动打包)',
+        btn_enc: '🔒 执行隐写',
+        drop_enc_carrier: '点击选择或拖拽载体文件至此',
+        drop_enc_carrier_sub: '支持任意格式 (图片/视频/文档/exe等)',
+        drop_key: '拖拽密钥文件至此',
+        drop_key_sub_enc: '限100MB内, 若使用文件则忽略文字',
+        drop_key_sub_dec: '限100MB内',
+        drop_payload: '拖拽需隐藏的文件至此',
+        drop_payload_sub: '非Chrome浏览器总计限500MB内',
+        dec_h1: '🔓 数据提取解密',
+        dec_h2_1: '已隐写的文件',
+        dec_h2_2: '解密密钥 (需与加密时完全一致)',
+        ph_dec_pwd: '输入解密密码',
+        btn_dec: '🔓 读取隐藏结构',
+        btn_clear: '🗑️ 清空解密区数据',
+        drop_dec_carrier: '点击选择或拖拽待解密文件',
+        drop_dec_carrier_sub: '自动识别内存模式或流式模式',
+        foot_local: '本地处理绝不上传',
+        // 动态
+        max_size: '(最大 {0})',
+        loading: '(加载中...)',
+        zone_ready_enc: '✅ 载体已就绪',
+        zone_ready_dec: '✅ 文件已就绪',
+        zone_ready_key: '🔑 密钥文件已就绪',
+        payload_count: '📦 已添加 {0} 个文件',
+        total_size: '总计 {0}',
+        preparing: '准备中...',
+        err_no_carrier: '错误: 请选择载体',
+        err_no_payload: '错误: 无隐藏内容',
+        err_no_key: '错误: 无密钥',
+        err_no_file: '错误: 无文件',
+        err_bad_key: '密码错误或数据损坏',
+        err_no_stego: '未检测到隐写数据',
+        err_file_too_big: '载体文件不能超过 {0}！',
+        err_key_too_big: '密钥文件过大，请使用100MB以内的文件。',
+        err_payload_too_big: '文件 {0} 过大，已跳过',
+        err_browser_limit: '当前浏览器限制：隐藏内容总计不能超过 {0}',
+        err_read_incomplete: '文件读取不完整',
+        err_block_decrypt: '区块解密失败，文件可能已损坏',
+        err_generic: '错误: ',
+        err_download: '下载失败: ',
+        mem_phase_1: '阶段 1/3: 流式写入载体...',
+        mem_phase_2: '阶段 2/3: 打包并加密数据...',
+        mem_phase_3: '阶段 3/3: 写入尾部并下载...',
+        stream_phase_1: '阶段 1/4: 流式写入载体文件...',
+        stream_phase_2: '阶段 2/4: 派生密钥...',
+        stream_phase_3: '阶段 3/4: 分块加密隐藏数据...',
+        stream_phase_4: '阶段 4/4: 写入结构清单...',
+        success_mem: '成功！文件已开始下载或保存。',
+        success_stream: '成功！文件已直接保存至硬盘。',
+        status_read_tail: '读取尾部结构...',
+        status_dec_data: '验证密钥并解密数据...',
+        status_dec_manifest: '验证密钥并解密清单...',
+        success_dec: '解密成功！发现 {0} 个文件。',
+        hidden_text: '[隐藏文本]',
+        hidden_file: '[隐藏文件] {0}',
+        size_label: '大小: {0}',
+        btn_download: '下载文件',
+        prep_download: '准备下载: {0}...',
+        done_download: '下载完成: {0}',
+        ph_key_used: '已使用密钥文件'
+    },
+    en: {
+        lang_btn: '中文',
+        title: 'StegoX Deep Steganography - 🔰雨苁ℒ🔰',
+        guide_enc_title: '🔒 Encrypt: Hide Payload',
+        guide_enc_item1: '<span style="color: #8fe223; font-weight: bold;">1. Carrier File:</span> Find any normal file as a shell (e.g., <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">1.png</code>, <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">cmd.exe</code>).',
+        guide_enc_item2: '<span style="color: #8fe223; font-weight: bold;">2. Key:</span> Pick a memorable file as a key (e.g., <code style="color: #e1ff00; background: #2a2a2a; padding: 1px 4px; border-radius: 3px; font-size: 12px;">123.docx</code>), or type a strong password.',
+        guide_enc_item3: '<span style="color: #8fe223; font-weight: bold;">3. Payload:</span> Drag the "goods" (text or large files) you want to hide into the carrier.',
+        guide_enc_res: '<span style="color: #00ffc8;">👉 Result:</span> Click execute to generate a new file identical to the carrier. Take it away!',
+        guide_dec_title: '🔓 Decrypt: Extract Payload',
+        guide_dec_item1: '<span style="color: #ffb74d; font-weight: bold;">1. Drag File:</span> Drag the generated "new file" into the decrypt area.',
+        guide_dec_item2: '<span style="color: #ffb74d; font-weight: bold;">2. Provide Key:</span> Provide the <strong style="color: #fff;">exact same</strong> key file or password used during encryption.',
+        guide_dec_res: '<span style="color: #ff9800;">👉 Result:</span> Click extract to perfectly retrieve the hidden "goods".',
+        enc_h1: '⚔ Data Steganography Encryption',
+        enc_h2_1: 'Carrier File',
+        enc_h2_2: 'Decryption Key (Text or File)',
+        enc_h2_3: 'Hidden Content (Text & Files)',
+        ph_enc_pwd: 'Enter strong password (12+ chars)',
+        ph_enc_text: 'Enter text to hide (auto-packed)',
+        btn_enc: '🔒 Execute Steganography',
+        drop_enc_carrier: 'Click to select or drag carrier file here',
+        drop_enc_carrier_sub: 'Any format (Image/Video/Doc/EXE)',
+        drop_key: 'Drag key file here',
+        drop_key_sub_enc: 'Max 100MB. Text ignored if file used.',
+        drop_key_sub_dec: 'Max 100MB',
+        drop_payload: 'Drag payload files here',
+        drop_payload_sub: 'Non-Chrome browsers limited to 500MB total',
+        dec_h1: '🔓 Data Extraction & Decryption',
+        dec_h2_1: 'Steganographed File',
+        dec_h2_2: 'Decryption Key (Must match encryption)',
+        ph_dec_pwd: 'Enter decryption password',
+        btn_dec: '🔓 Read Hidden Structure',
+        btn_clear: '🗑️ Clear Decryption Data',
+        drop_dec_carrier: 'Click to select or drag encrypted file here',
+        drop_dec_carrier_sub: 'Auto-detects memory or stream mode',
+        foot_local: '100% Local Processing, No Uploads',
+        max_size: '(Max {0})',
+        loading: '(Loading...)',
+        zone_ready_enc: '✅ Carrier Ready',
+        zone_ready_dec: '✅ File Ready',
+        zone_ready_key: '🔑 Key File Ready',
+        payload_count: '📦 Added {0} files',
+        total_size: 'Total {0}',
+        preparing: 'Preparing...',
+        err_no_carrier: 'Error: Please select carrier',
+        err_no_payload: 'Error: No hidden content',
+        err_no_key: 'Error: No key provided',
+        err_no_file: 'Error: No file selected',
+        err_bad_key: 'Wrong password or corrupted data',
+        err_no_stego: 'No steganography data detected',
+        err_file_too_big: 'Carrier file cannot exceed {0}!',
+        err_key_too_big: 'Key file too large, please use a file under 100MB.',
+        err_payload_too_big: 'File {0} is too large, skipped',
+        err_browser_limit: 'Browser limit: Hidden content cannot exceed {0}',
+        err_read_incomplete: 'Incomplete file read',
+        err_block_decrypt: 'Block decryption failed, file may be corrupted',
+        err_generic: 'Error: ',
+        err_download: 'Download failed: ',
+        mem_phase_1: 'Phase 1/3: Streaming carrier...',
+        mem_phase_2: 'Phase 2/3: Packing and encrypting data...',
+        mem_phase_3: 'Phase 3/3: Writing tail and downloading...',
+        stream_phase_1: 'Phase 1/4: Streaming carrier file...',
+        stream_phase_2: 'Phase 2/4: Deriving key...',
+        stream_phase_3: 'Phase 3/4: Chunking and encrypting data...',
+        stream_phase_4: 'Phase 4/4: Writing manifest...',
+        success_mem: 'Success! File download/save started.',
+        success_stream: 'Success! File saved directly to disk.',
+        status_read_tail: 'Reading tail structure...',
+        status_dec_data: 'Verifying key and decrypting data...',
+        status_dec_manifest: 'Verifying key and decrypting manifest...',
+        success_dec: 'Success! Found {0} files.',
+        hidden_text: '[Hidden Text]',
+        hidden_file: '[Hidden File] {0}',
+        size_label: 'Size: {0}',
+        btn_download: 'Download File',
+        prep_download: 'Preparing download: {0}...',
+        done_download: 'Download complete: {0}',
+        ph_key_used: 'Key file in use'
+    }
+};
+
+function t(key, ...args) {
+    let str = i18n[currentLang][key] || key;
+    for (let i = 0; i < args.length; i++) {
+        str = str.replace(`{${i}}`, args[i]);
+    }
+    return str;
+}
+
+function toggleLang() {
+    currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    document.querySelector('.lang-switch').textContent = t('lang_btn');
+    applyLang(currentLang);
+}
+
+function applyLang(lang) {
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) el.textContent = i18n[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (i18n[lang][key]) el.innerHTML = i18n[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        const key = el.getAttribute('data-i18n-ph');
+        if (i18n[lang][key]) el.placeholder = i18n[lang][key];
+    });
+
+    // Update zones if they are in default state
+    if (!encCarrierFile) resetZone('encCarrierZone', getZoneDefaultHtml('encCarrierZone'));
+    if (!encKeyFile) {
+        resetZone('encKeyZone', getZoneDefaultHtml('encKeyZone'));
+        $('encPassword').placeholder = $('encPassword').value ? t('ph_key_used') : t('ph_enc_pwd');
+    }
+    if (encPayloadItems.length === 0) resetZone('encPayloadZone', getZoneDefaultHtml('encPayloadZone'));
+    if (!decCarrierFile) resetZone('decCarrierZone', getZoneDefaultHtml('decCarrierZone'));
+    if (!decKeyFile) {
+        resetZone('decKeyZone', getZoneDefaultHtml('decKeyZone'));
+        $('decPassword').placeholder = $('decPassword').value ? t('ph_key_used') : t('ph_dec_pwd');
+    }
+
+    $('encCarrierLimit').textContent = t('max_size', formatSize(MAX_FILE_SIZE));
+}
+
+function getZoneDefaultHtml(zoneId) {
+    const htmls = {
+        encCarrierZone: `<div>${t('drop_enc_carrier')}</div><small>${t('drop_enc_carrier_sub')}</small>`,
+        encKeyZone: `<div>${t('drop_key')}</div><small>${t('drop_key_sub_enc')}</small>`,
+        encPayloadZone: `<div>${t('drop_payload')}</div><small>${t('drop_payload_sub')}</small>`,
+        decCarrierZone: `<div>${t('drop_dec_carrier')}</div><small>${t('drop_dec_carrier_sub')}</small>`,
+        decKeyZone: `<div>${t('drop_key')}</div><small>${t('drop_key_sub_dec')}</small>`
+    };
+    return htmls[zoneId];
+}
+
+// ========== 核心逻辑 ==========
+const MAGIC_NUMBER = 0x59435A53;
+const TAIL_LEN = 48;
+const FORMAT_MEMORY = 1;
+const FORMAT_STREAM = 2;
+
+const MAX_KEY_SIZE = 100 * 1024 * 1024;
+const MEM_MODE_LIMIT = 500 * 1024 * 1024;
+const PBKDF2_ITERATIONS = 250000;
+const HASH_ALGO = 'SHA-512';
+const CHUNK_SIZE = 1024 * 1024;
+const GCM_TAG_LEN = 16;
+
+const isFSASupported = window.showSaveFilePicker !== undefined;
+const MAX_FILE_SIZE = isFSASupported ? 5 * 1024 * 1024 * 1024 : MEM_MODE_LIMIT;
+
+let encCarrierFile = null, encKeyFile = null, encPayloadItems = [];
+let decCarrierFile = null, decKeyFile = null, decManifest = null;
+let decGlobalKey = null, decMemData = null, decMemHeaderLen = 0;
+let decPayloadStart = 0, decGlobalTotalLen = 0;
+
+const $ = id => document.getElementById(id);
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
+    return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function readArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error("Read error"));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function setZoneActive(zoneId, mainText, subText) {
+    const zone = $(zoneId);
+    zone.classList.add('active');
+    zone.innerHTML = `<div>${mainText}</div><small>${subText}</small>`;
+}
+function resetZone(zoneId, defaultHtml) {
+    const zone = $(zoneId);
+    zone.classList.remove('active');
+    zone.innerHTML = defaultHtml;
+}
+
+function setupDropZone(zoneId, inputId, handler) {
+    const zone = $(zoneId);
+    const input = $(inputId);
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', e => { if (e.target.files.length) handler(e.target.files); });
+    zone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); zone.classList.remove('dragover'); });
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handler(e.dataTransfer.files);
+    });
+}
+
+async function getWritableStream(suggestedName) {
+    if (isFSASupported) {
+        try {
+            const handle = await window.showSaveFilePicker({ suggestedName });
+            return await handle.createWritable();
+        } catch (e) {
+            if (e.name === 'AbortError') throw e;
+        }
+    }
+    const chunks = [];
+    return {
+        write: async (data) => { chunks.push(data); },
+        close: async () => {
+            const blob = new Blob(chunks);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = suggestedName;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
+}
+
+function safeCopy(buffer, start, length) {
+    const arr = new Uint8Array(length);
+    arr.set(new Uint8Array(buffer, start, length));
+    return arr;
+}
+
+setupDropZone('encCarrierZone', 'encCarrierFile', (files) => {
+    const file = files[0];
+    if (file.size > MAX_FILE_SIZE) return alert(t('err_file_too_big', formatSize(MAX_FILE_SIZE)));
+    encCarrierFile = file;
+    setZoneActive('encCarrierZone', t('zone_ready_enc'), `${file.name} (${formatSize(file.size)})`);
+});
+setupDropZone('encKeyZone', 'encKeyFile', (files) => {
+    const file = files[0];
+    if (file.size > MAX_KEY_SIZE) return alert(t('err_key_too_big'));
+    encKeyFile = file;
+    $('encPassword').value = ''; $('encPassword').placeholder = t('ph_key_used');
+    setZoneActive('encKeyZone', t('zone_ready_key'), `${file.name} (${formatSize(file.size)})`);
+});
+setupDropZone('encPayloadZone', 'encPayloadFile', (files) => {
+    for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) { alert(t('err_payload_too_big', file.name)); continue; }
+        encPayloadItems.push({ name: file.name, size: file.size, file: file });
+    }
+    $('encPayloadFile').value = '';
+    renderEncPayloadList();
+    if (encPayloadItems.length > 0) {
+        let totalSize = 0;
+        encPayloadItems.forEach(i => totalSize += i.size);
+        setZoneActive('encPayloadZone', t('payload_count', encPayloadItems.length), t('total_size', formatSize(totalSize)));
+    }
+});
+
+function renderEncPayloadList() {
+    const list = $('encPayloadList');
+    list.innerHTML = '';
+    encPayloadItems.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'payload-item';
+        const span = document.createElement('span');
+        span.textContent = `📄 ${item.name} (${formatSize(item.size)})`;
+        const btn = document.createElement('button');
+        btn.className = 'mini-btn'; btn.textContent = 'X';
+        btn.onclick = () => { 
+            encPayloadItems.splice(index, 1); renderEncPayloadList(); 
+            if (encPayloadItems.length === 0) resetZone('encPayloadZone', getZoneDefaultHtml('encPayloadZone'));
+            else setZoneActive('encPayloadZone', t('payload_count', encPayloadItems.length), t('total_size', formatSize(encPayloadItems.reduce((s,i)=>s+i.size,0))));
+        };
+        div.appendChild(span); div.appendChild(btn);
+        list.appendChild(div);
+    });
+}
+
+async function deriveKey(rawKeySource, saltArr) {
+    let rawKeyArr;
+    if (typeof rawKeySource === 'string') {
+        rawKeyArr = new TextEncoder().encode(rawKeySource);
+    } else {
+        const hashBuf = await crypto.subtle.digest(HASH_ALGO, rawKeySource);
+        rawKeyArr = new Uint8Array(hashBuf);
+    }
+    const keyMaterial = await crypto.subtle.importKey('raw', rawKeyArr, { name: 'PBKDF2' }, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: saltArr, iterations: PBKDF2_ITERATIONS, hash: HASH_ALGO }, 
+        keyMaterial, 
+        { name: 'AES-GCM', length: 256 }, 
+        false, 
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function hideData() {
+    const textVal = $('encText').value;
+    let totalPayloadSize = textVal.length;
+    for (const item of encPayloadItems) totalPayloadSize += item.size;
+
+    if (!isFSASupported || totalPayloadSize <= MEM_MODE_LIMIT) {
+        if (!isFSASupported && totalPayloadSize > MEM_MODE_LIMIT) {
+            return alert(t('err_browser_limit', formatSize(MEM_MODE_LIMIT)));
+        }
+        await hideDataMemory();
+    } else {
+        await hideDataStream();
+    }
+}
+
+async function hideDataMemory() {
+    const status = $('encStatus'), btn = $('encBtn'), prog = $('encProgress'), progFill = $('encProgressFill');
+    status.className = 'status processing'; status.textContent = t('preparing');
+    btn.disabled = true; prog.classList.add('active'); progFill.style.width = '0%'; progFill.textContent = '0%';
+
+    if (!encCarrierFile) { status.className = 'status error'; status.textContent = t('err_no_carrier'); btn.disabled = false; prog.classList.remove('active'); return; }
+    const textVal = $('encText').value;
+    if (!textVal && encPayloadItems.length === 0) { status.className = 'status error'; status.textContent = t('err_no_payload'); btn.disabled = false; prog.classList.remove('active'); return; }
+    const pwd = $('encPassword').value;
+    if (!pwd && !encKeyFile) { status.className = 'status error'; status.textContent = t('err_no_key'); btn.disabled = false; prog.classList.remove('active'); return; }
+
+    try {
+        const writable = await getWritableStream(encCarrierFile.name);
+
+        status.textContent = t('mem_phase_1');
+        let writtenBytes = 0;
+        for await (const chunk of encCarrierFile.stream()) {
+            await writable.write(chunk);
+            writtenBytes += chunk.byteLength;
+            let p = (writtenBytes / encCarrierFile.size) * 50;
+            progFill.style.width = p + '%'; progFill.textContent = Math.round(p) + '%';
+        }
+
+        status.textContent = t('mem_phase_2');
+        const manifest = { text: textVal, files: [] };
+        const fileChunks = [];
+        let currentOffset = 0;
+
+        for (const item of encPayloadItems) {
+            manifest.files.push({ name: item.name, size: item.size, offset: currentOffset });
+            const buf = await readArrayBuffer(item.file);
+            fileChunks.push(new Uint8Array(buf));
+            currentOffset += item.size;
+        }
+
+        const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest));
+        const header = new ArrayBuffer(5);
+        new DataView(header).setUint32(1, manifestBytes.length, true);
+        
+        let totalLen = header.byteLength + manifestBytes.byteLength + currentOffset;
+        const packedData = new Uint8Array(totalLen);
+        let offset = 0;
+        packedData.set(new Uint8Array(header), offset); offset += header.byteLength;
+        packedData.set(manifestBytes, offset); offset += manifestBytes.byteLength;
+        for (const chunk of fileChunks) {
+            packedData.set(chunk, offset); offset += chunk.byteLength;
+        }
+
+        const rawKeySource = encKeyFile ? await readArrayBuffer(encKeyFile) : pwd;
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveKey(rawKeySource, salt);
+        
+        const plainBuf = safeCopy(packedData.buffer, 0, totalLen);
+        const encryptedBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plainBuf);
+        const encData = new Uint8Array(encryptedBuffer);
+        progFill.style.width = '80%'; progFill.textContent = '80%';
+
+        status.textContent = t('mem_phase_3');
+        const tail = new ArrayBuffer(TAIL_LEN);
+        const tView = new DataView(tail);
+        tView.setUint32(0, MAGIC_NUMBER, true);
+        tView.setUint8(4, FORMAT_MEMORY);
+        tView.setFloat64(5, totalLen, true);
+        new Uint8Array(tail, 13, 12).set(iv);
+        tView.setUint32(25, encData.length, true);
+        new Uint8Array(tail, 29, 16).set(salt);
+
+        await writable.write(encData);
+        await writable.write(tail);
+        await writable.close();
+        
+        progFill.style.width = '100%'; progFill.textContent = '100%';
+        status.className = 'status success'; status.textContent = t('success_mem');
+        setTimeout(() => { btn.disabled = false; prog.classList.remove('active'); clearEncData(); }, 3000);
+
+    } catch (e) {
+        status.className = 'status error'; status.textContent = t('err_generic') + e.message;
+        btn.disabled = false; prog.classList.remove('active');
+    }
+}
+
+async function hideDataStream() {
+    const status = $('encStatus'), btn = $('encBtn'), prog = $('encProgress'), progFill = $('encProgressFill');
+    status.className = 'status processing'; status.textContent = t('preparing');
+    btn.disabled = true; prog.classList.add('active'); progFill.style.width = '0%'; progFill.textContent = '0%';
+
+    if (!encCarrierFile) { status.className = 'status error'; status.textContent = t('err_no_carrier'); btn.disabled = false; prog.classList.remove('active'); return; }
+    const textVal = $('encText').value;
+    if (!textVal && encPayloadItems.length === 0) { status.className = 'status error'; status.textContent = t('err_no_payload'); btn.disabled = false; prog.classList.remove('active'); return; }
+    const pwd = $('encPassword').value;
+    if (!pwd && !encKeyFile) { status.className = 'status error'; status.textContent = t('err_no_key'); btn.disabled = false; prog.classList.remove('active'); return; }
+
+    try {
+        const writable = await getWritableStream(encCarrierFile.name);
+
+        status.textContent = t('stream_phase_1');
+        let writtenBytes = 0;
+        for await (const chunk of encCarrierFile.stream()) {
+            await writable.write(chunk);
+            writtenBytes += chunk.byteLength;
+            let p = (writtenBytes / encCarrierFile.size) * 40;
+            progFill.style.width = p + '%'; progFill.textContent = Math.round(p) + '%';
+        }
+
+        status.textContent = t('stream_phase_2');
+        const rawKeySource = encKeyFile ? await readArrayBuffer(encKeyFile) : pwd;
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const key = await deriveKey(rawKeySource, salt);
+
+        status.textContent = t('stream_phase_3');
+        const manifest = { text: textVal, files: [] };
+        let currentOffset = 0;
+        let totalPlaintextLen = 0;
+        let buffer = new Uint8Array(CHUNK_SIZE);
+        let bufferLen = 0;
+        let blockIndex = 0;
+
+        async function processChunk(chunkData) {
+            let data = chunkData;
+            while (data.length > 0) {
+                let space = buffer.length - bufferLen;
+                let toCopy = Math.min(data.length, space);
+                buffer.set(data.subarray(0, toCopy), bufferLen);
+                bufferLen += toCopy;
+                data = data.subarray(toCopy);
+                
+                if (bufferLen === buffer.length) {
+                    let iv = crypto.getRandomValues(new Uint8Array(12));
+                    let plainData = safeCopy(buffer.buffer, 0, bufferLen);
+                    let enc = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plainData));
+                    let block = new Uint8Array(12 + enc.length);
+                    block.set(iv); block.set(enc, 12);
+                    await writable.write(block);
+                    totalPlaintextLen += bufferLen;
+                    blockIndex++; bufferLen = 0;
+                    if (blockIndex % 10 === 0) {
+                        let p = 40 + (totalPlaintextLen / (totalPlaintextLen + 1024)) * 40;
+                        progFill.style.width = p + '%'; progFill.textContent = Math.round(p) + '%';
+                    }
+                }
+            }
+        }
+
+        for (const item of encPayloadItems) {
+            manifest.files.push({ name: item.name, size: item.size, offset: currentOffset });
+            for await (const chunk of item.file.stream()) {
+                await processChunk(new Uint8Array(chunk));
+                currentOffset += chunk.byteLength;
+            }
+        }
+        if (bufferLen > 0) {
+            let iv = crypto.getRandomValues(new Uint8Array(12));
+            let plainData = safeCopy(buffer.buffer, 0, bufferLen);
+            let enc = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plainData));
+            let block = new Uint8Array(12 + enc.length);
+            block.set(iv); block.set(enc, 12);
+            await writable.write(block);
+            totalPlaintextLen += bufferLen;
+        }
+
+        status.textContent = t('stream_phase_4');
+        progFill.style.width = '90%'; progFill.textContent = '90%';
+        const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest));
+        const mIv = crypto.getRandomValues(new Uint8Array(12));
+        const mEnc = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: mIv }, key, manifestBytes));
+        await writable.write(mIv); await writable.write(mEnc);
+
+        const tail = new ArrayBuffer(TAIL_LEN);
+        const tView = new DataView(tail);
+        tView.setUint32(0, MAGIC_NUMBER, true);
+        tView.setUint8(4, FORMAT_STREAM);
+        tView.setFloat64(5, totalPlaintextLen, true);
+        new Uint8Array(tail, 13, 12).set(mIv);
+        tView.setUint32(25, mEnc.length, true);
+        new Uint8Array(tail, 29, 16).set(salt);
+        await writable.write(tail);
+
+        await writable.close();
+        progFill.style.width = '100%'; progFill.textContent = '100%';
+        status.className = 'status success'; status.textContent = t('success_stream');
+        
+        setTimeout(() => { btn.disabled = false; prog.classList.remove('active'); clearEncData(); }, 3000);
+
+    } catch (e) {
+        status.className = 'status error'; status.textContent = t('err_generic') + e.message;
+        btn.disabled = false; prog.classList.remove('active');
+    }
+}
+
+function clearEncData() {
+    encCarrierFile = null; encKeyFile = null; encPayloadItems = [];
+    $('encCarrierFile').value = ''; $('encKeyFile').value = ''; $('encPassword').value = '';
+    $('encPassword').placeholder = t('ph_enc_pwd');
+    $('encText').value = ''; $('encPayloadFile').value = '';
+    renderEncPayloadList();
+    resetZone('encCarrierZone', getZoneDefaultHtml('encCarrierZone'));
+    resetZone('encKeyZone', getZoneDefaultHtml('encKeyZone'));
+    resetZone('encPayloadZone', getZoneDefaultHtml('encPayloadZone'));
+    $('encStatus').className = 'status'; $('encStatus').textContent = '';
+}
+
+setupDropZone('decCarrierZone', 'decCarrierFile', (files) => {
+    decCarrierFile = files[0]; decManifest = null;
+    $('extractedList').innerHTML = ''; $('decStatus').className = 'status';
+    setZoneActive('decCarrierZone', t('zone_ready_dec'), `${decCarrierFile.name} (${formatSize(decCarrierFile.size)})`);
+});
+setupDropZone('decKeyZone', 'decKeyFile', (files) => {
+    const file = files[0];
+    if (file.size > MAX_KEY_SIZE) return alert(t('err_key_too_big'));
+    decKeyFile = file;
+    $('decPassword').value = ''; $('decPassword').placeholder = t('ph_key_used');
+    setZoneActive('decKeyZone', t('zone_ready_key'), `${file.name} (${formatSize(file.size)})`);
+});
+
+async function extractData() {
+    const status = $('decStatus'), btn = $('decBtn');
+    status.className = 'status processing'; status.textContent = t('preparing'); btn.disabled = true;
+
+    if (!decCarrierFile) { status.className = 'status error'; status.textContent = t('err_no_file'); btn.disabled = false; return; }
+    const pwd = $('decPassword').value;
+    if (!pwd && !decKeyFile) { status.className = 'status error'; status.textContent = t('err_no_key'); btn.disabled = false; return; }
+
+    try {
+        status.textContent = t('status_read_tail');
+        const tailBuf = await readArrayBuffer(decCarrierFile.slice(decCarrierFile.size - TAIL_LEN));
+        const tView = new DataView(tailBuf);
+        if (tView.getUint32(0, true) !== MAGIC_NUMBER) throw new Error(t('err_no_stego'));
+        
+        const format = tView.getUint8(4);
+        const totalLen = tView.getFloat64(5, true);
+        const iv = safeCopy(tailBuf, 13, 12);
+        const encLen = tView.getUint32(25, true);
+        const salt = safeCopy(tailBuf, 29, 16);
+
+        const rawKeySource = decKeyFile ? await readArrayBuffer(decKeyFile) : pwd;
+        decGlobalKey = await deriveKey(rawKeySource, salt);
+
+        if (format === FORMAT_MEMORY) {
+            await extractDataMemory(iv, encLen, totalLen);
+        } else {
+            await extractDataStream(iv, encLen, totalLen);
+        }
+        btn.disabled = false;
+    } catch (e) {
+        status.className = 'status error'; status.textContent = t('err_generic') + e.message;
+        btn.disabled = false;
+    }
+}
+
+async function extractDataMemory(iv, encLen, totalLen) {
+    const status = $('decStatus');
+    status.textContent = t('status_dec_data');
+    
+    const encStart = decCarrierFile.size - TAIL_LEN - encLen;
+    const encBufRaw = await readArrayBuffer(decCarrierFile.slice(encStart, encStart + encLen));
+    const encBuf = safeCopy(encBufRaw, 0, encBufRaw.byteLength);
+    
+    let decBuf;
+    try {
+        decBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, decGlobalKey, encBuf);
+    } catch (e) { throw new Error(t('err_bad_key')); }
+
+    decMemData = new Uint8Array(decBuf);
+    const view = new DataView(decMemData.buffer);
+    let off = 0;
+    view.getUint8(off); off += 1;
+    const jsonLen = view.getUint32(off, true); off += 4;
+    const jsonBytes = decMemData.subarray(off, off + jsonLen); off += jsonLen;
+    decMemHeaderLen = off;
+    
+    decManifest = JSON.parse(new TextDecoder().decode(jsonBytes));
+    renderExtractedList();
+    status.className = 'status success'; status.textContent = t('success_dec', decManifest.files.length);
+}
+
+async function extractDataStream(iv, encLen, totalLen) {
+    const status = $('decStatus');
+    status.textContent = t('status_dec_manifest');
+    
+    decGlobalTotalLen = totalLen;
+    const mEncStart = decCarrierFile.size - TAIL_LEN - encLen;
+    const mEncBufRaw = await readArrayBuffer(decCarrierFile.slice(mEncStart, mEncStart + encLen));
+    const mEncBuf = safeCopy(mEncBufRaw, 0, mEncBufRaw.byteLength);
+    
+    let manifestBytes;
+    try {
+        manifestBytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, decGlobalKey, mEncBuf);
+    } catch (e) { throw new Error(t('err_bad_key')); }
+
+    decManifest = JSON.parse(new TextDecoder().decode(manifestBytes));
+    const numBlocks = Math.ceil(totalLen / CHUNK_SIZE);
+    const totalCipherLen = numBlocks * 12 + totalLen + numBlocks * GCM_TAG_LEN;
+    decPayloadStart = mEncStart - totalCipherLen;
+    
+    renderExtractedList();
+    status.className = 'status success'; status.textContent = t('success_dec', decManifest.files.length);
+}
+
+function renderExtractedList() {
+    const list = $('extractedList');
+    list.innerHTML = '';
+    if (decManifest.text) {
+        const div = document.createElement('div');
+        div.className = 'extracted-item';
+        div.innerHTML = `<div class="info"><strong style="color:#8fe223">${t('hidden_text')}</strong><div><pre style="margin-top:5px;white-space:pre-wrap;word-break:break-all;color:#8fe223;font-family:inherit;">${decManifest.text}</pre></div></div>`;
+        list.appendChild(div);
+    }
+    for (let i = 0; i < decManifest.files.length; i++) {
+        const f = decManifest.files[i];
+        const div = document.createElement('div');
+        div.className = 'extracted-item';
+        div.innerHTML = `<div class="info"><strong>${t('hidden_file', f.name)}</strong><div>${t('size_label', formatSize(f.size))}</div></div>`;
+        const btnDl = document.createElement('button'); btnDl.textContent = t('btn_download');
+        btnDl.onclick = () => downloadFile(i);
+        div.appendChild(btnDl);
+        list.appendChild(div);
+    }
+}
+
+async function downloadFile(index) {
+    const status = $('decStatus'), prog = $('decProgress'), progFill = $('decProgressFill');
+    const f = decManifest.files[index];
+    prog.classList.add('active'); progFill.style.width = '0%'; progFill.textContent = '0%';
+    status.className = 'status processing'; status.textContent = t('prep_download', f.name);
+
+    try {
+        const writable = await getWritableStream(f.name);
+
+        if (decMemData) {
+            const start = decMemHeaderLen + f.offset;
+            const end = start + f.size;
+            const fileData = decMemData.subarray(start, end);
+            const cleanCopy = safeCopy(fileData.buffer, fileData.byteOffset, f.size);
+            await writable.write(cleanCopy);
+        } else {
+            let currentOffset = f.offset;
+            let bytesRemaining = f.size;
+            let numBlocks = Math.ceil(decGlobalTotalLen / CHUNK_SIZE);
+            
+            while (bytesRemaining > 0) {
+                let blockIndex = Math.floor(currentOffset / CHUNK_SIZE);
+                let blockInternalOffset = currentOffset % CHUNK_SIZE;
+                
+                let blockPlaintextLen = (blockIndex === numBlocks - 1) ? (decGlobalTotalLen - blockIndex * CHUNK_SIZE) : CHUNK_SIZE;
+                let blockCipherLen = blockPlaintextLen + GCM_TAG_LEN;
+                
+                let diskBlockOffset = decPayloadStart + blockIndex * (12 + CHUNK_SIZE + GCM_TAG_LEN);
+                let readSize = 12 + blockCipherLen;
+                
+                let chunkBuf = await readArrayBuffer(decCarrierFile.slice(diskBlockOffset, diskBlockOffset + readSize));
+                if (chunkBuf.byteLength !== readSize) throw new Error(t('err_read_incomplete'));
+                
+                let iv = safeCopy(chunkBuf, 0, 12);
+                let enc = safeCopy(chunkBuf, 12, blockCipherLen);
+                
+                let decData;
+                try {
+                    decData = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, decGlobalKey, enc));
+                } catch(e) { throw new Error(t('err_block_decrypt')); }
+                
+                let toWrite = decData.subarray(blockInternalOffset, Math.min(blockInternalOffset + bytesRemaining, decData.length));
+                await writable.write(toWrite);
+                
+                bytesRemaining -= toWrite.length;
+                currentOffset += toWrite.length;
+                
+                let p = ((f.size - bytesRemaining) / f.size) * 100;
+                progFill.style.width = p + '%'; progFill.textContent = Math.round(p) + '%';
+            }
+        }
+
+        await writable.close();
+        status.className = 'status success'; status.textContent = t('done_download', f.name);
+        setTimeout(() => prog.classList.remove('active'), 2000);
+    } catch (e) {
+        status.className = 'status error'; status.textContent = t('err_download') + e.message;
+        prog.classList.remove('active');
+    }
+}
+
+function clearDecData() {
+    decCarrierFile = null; decKeyFile = null; decManifest = null; decGlobalKey = null; decMemData = null;
+    $('decCarrierFile').value = ''; $('decKeyFile').value = '';
+    $('decPassword').value = ''; $('decPassword').placeholder = t('ph_dec_pwd');
+    $('extractedList').innerHTML = '';
+    resetZone('decCarrierZone', getZoneDefaultHtml('decCarrierZone'));
+    resetZone('decKeyZone', getZoneDefaultHtml('decKeyZone'));
+    $('decStatus').className = 'status'; $('decStatus').textContent = '';
+}
+
+// 初始化语言
+applyLang(currentLang);
+</script>
+</body>
+</html>
